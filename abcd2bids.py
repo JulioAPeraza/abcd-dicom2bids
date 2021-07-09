@@ -216,7 +216,7 @@ def get_cli_args():
         help=("List of sessions for each subject to download. The default is "
              "to download all sessions for each subject. "
              "The possible selections are {}".format(SESSIONS))
-)    
+)
 
     # Optional: Modalities
     parser.add_argument(
@@ -229,7 +229,7 @@ def get_cli_args():
         help=("List of the imaging modalities that should be downloaded for "
              "each subject. The default is to download all modalities. "
              "The possible selections are {}".format(MODALITIES))
-)    
+)
 
     # Optional: During unpack_and_setup, remove unprocessed data
     parser.add_argument(
@@ -454,7 +454,7 @@ def make_nda_token(args):
             password = args.password
         else:
             password = getpass("Enter your NIMH Data Archives password: ")
-            
+
         make_config_file(args.config, username, password)
 
     # Try to make NDA token
@@ -533,19 +533,19 @@ def create_good_and_bad_series_table(cli_args):
     Create good_and_bad_series_table.csv by merging imaging data with QC data
     :param cli_args: argparse namespace containing all CLI arguments.
     :return: N/A
-    """   
+    """
     # Import QC data from .csv file
     with open(cli_args.qc) as qc_file:
         all_qc_data = pd.read_csv(
             qc_file, encoding="utf-8-sig", sep=",|\t", engine="python",
             index_col=False, header=0, skiprows=[1] # Skip row 2 (description)
         )
-    
+
     # Remove quotes from values and convert int-strings to ints
     all_qc_data = all_qc_data.applymap(lambda x: x.strip('"')).apply(
         lambda x: x.apply(lambda y: int(y) if y.isnumeric() else y)
     )
-    
+
     # Remove quotes from headers
     new_headers = []
     for header in all_qc_data.columns: # data.columns is your list of headers
@@ -565,7 +565,7 @@ def create_good_and_bad_series_table(cli_args):
 
     # Add missing column by splitting data from other column
     image_desc_col = qc_data.apply(get_img_desc, axis=1)
-    
+
     qc_data = qc_data.assign(**{'image_description': image_desc_col.values})
 
     # Change column names for good_bad_series_parser to use; then save to .csv
@@ -619,9 +619,9 @@ def download_nda_data(cli_args):
     """
     subprocess.check_call(("python3", "--version"))
     print(cli_args.modalities)
-    subprocess.check_call(("python3", 
+    subprocess.check_call(("python3",
                             SERIES_TABLE_PARSER,
-                            "--download-dir", cli_args.download, 
+                            "--download-dir", cli_args.download,
                             "--subject-list", cli_args.subject_list,
                             "--sessions", ','.join(cli_args.sessions),
                             "--modalities", ','.join(cli_args.modalities)))
@@ -643,7 +643,9 @@ def unpack_and_setup(args):
         f.close
         subject_list = [sub.strip() for sub in x]
         for subject in subject_list:
+            print(subject)
             subject_dir = os.path.join(args.download, subject)
+            print(subject_dir)
             if os.path.isdir(subject_dir):
                 for session_dir in os.scandir(subject_dir):
                     if session_dir.is_dir():
@@ -722,7 +724,7 @@ def correct_jsons(cli_args):
     for json_path in glob.iglob(os.path.join(sub_dirs, "*.json")):
         print("Removing .JSON file: {}".format(json_path))
         os.remove(json_path)
-    for vol_file in glob.iglob(os.path.join(sub_dirs, "ses*", 
+    for vol_file in glob.iglob(os.path.join(sub_dirs, "ses*",
                           "fmap", "vol*.nii.gz")):
         print("Removing 'vol' file: {}".format(vol_file))
         os.remove(vol_file)
@@ -738,14 +740,14 @@ def validate_bids(cli_args):
     """
     try:
         if cli_args.sif_path:
-            subprocess.check_call(("singularity", "run", "-B", cli_args.output + ":/data", 
+            subprocess.check_call(("singularity", "run", "-B", cli_args.output + ":/data",
                                    cli_args.sif_path, "/data"))
         else:
             if cli_args.docker_cmd:
                 subprocess.check_call(('sudo', cli_args.docker_cmd, "run", "-ti", "--rm", "-v",
                                        cli_args.output + ":/data:ro", "bids/validator",
                                        "/data"))
-            else:    
+            else:
                 subprocess.check_call(("docker", "run", "-ti", "--rm", "-v",
                                        cli_args.output + ":/data:ro", "bids/validator",
                                        "/data"))
@@ -754,4 +756,3 @@ def validate_bids(cli_args):
 
 if __name__ == '__main__':
     main()
-
