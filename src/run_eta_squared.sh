@@ -1,15 +1,15 @@
 #!/bin/sh
 # script for execution of deployed applications
 #
-# Sets up the MATLAB Runtime environment for the current $ARCH and executes 
+# Sets up the MATLAB Runtime environment for the current $ARCH and executes
 # the specified command.
 #
 exe_name=$0
 exe_dir=`dirname "$0"`
-if [ ! -d $HOME/$USER ]; then
-    mkdir $HOME/$USER
-fi
-export MCR_CACHE_ROOT=$HOME/$USER
+#if [ ! -d $HOME/$USER ]; then
+#    mkdir $HOME/$USER
+#fi
+#export MCR_CACHE_ROOT=$HOME/$USER
 echo "------------------------------------------"
 if [ "x$1" = "x" ]; then
   echo Usage:
@@ -25,16 +25,15 @@ else
   export LD_LIBRARY_PATH;
   echo LD_LIBRARY_PATH is ${LD_LIBRARY_PATH};
   shift 1
-  RANDHASH=`cat /dev/urandom | tr -cd "a-f0-9" | head -c 8`
-  export MCR_CACHE_ROOT=$HOME/$USER/$RANDHASH
-  mkdir -p $MCR_CACHE_ROOT
+  #RANDHASH=`cat /dev/urandom | tr -cd "a-f0-9" | head -c 8`
+  #export MCR_CACHE_ROOT=$HOME/$USER/$RANDHASH
+  #mkdir -p $MCR_CACHE_ROOT
   args=
   while [ $# -gt 0 ]; do
       token=$1
-      args="${args} \"${token}\"" 
+      args="${args} \"${token}\""
       shift
   done
   eval "\"${exe_dir}/eta_squared\"" $args
 fi
 exit
-
