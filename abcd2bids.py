@@ -79,6 +79,8 @@ def main():
     # Run all steps sequentially, starting at the one specified by the user
     started = False
     for step in STEP_NAMES:
+        if step == cli_args.stop_before:
+            break
         if step == cli_args.start_at:
             started = True
         if started:
@@ -249,6 +251,18 @@ def get_cli_args():
         default=STEP_NAMES[0],
         help=("Give the name of the step in the wrapper to start "
               "at, then run that step and every step after it. Here are the "
+              "names of all of the steps, in order from first to last: "
+              + ", ".join(STEP_NAMES))
+    )
+
+    # Optional: Pick a step to stop at, running previous ones, and then stop
+    # before that function and do not perform subsequent ones
+    parser.add_argument(
+        "--stop_before",
+        choices=STEP_NAMES,
+        default=STEP_NAMES[4],
+        help=("Give the name of the step in the wrapper to stop "
+              "at. All steps before will be run. Here are the "
               "names of all of the steps, in order from first to last: "
               + ", ".join(STEP_NAMES))
     )
