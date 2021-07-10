@@ -19,7 +19,7 @@ prog_descrip='test downloader'
 
 QC_CSV = os.path.join(os.path.dirname(os.path.dirname(
                     os.path.abspath(__file__))), "spreadsheets",
-                    "ABCD_good_and_bad_series_table.csv") 
+                    "ABCD_good_and_bad_series_table.csv")
 YEARS = ['baseline_year_1_arm_1', '2_year_follow_up_y_arm_1']
 MODALITIES = ['anat', 'func', 'dwi']
 
@@ -30,8 +30,8 @@ def generate_parser(parser=None):
             description=prog_descrip
         )
     parser.add_argument(
-        '-q', 
-        '--qc-csv', 
+        '-q',
+        '--qc-csv',
         dest='qc_csv',
         default=QC_CSV,
         help='Path to the csv file containing aws paths and operator QC info'
@@ -44,21 +44,21 @@ def generate_parser(parser=None):
         help='Path to where the subjects should be downloaded to.'
 )
     parser.add_argument(
-        '-s', 
-        '--subject-list', 
+        '-s',
+        '--subject-list',
         dest='subject_list',
         required=True,
         help='Path to a text file containing a list of subject IDs'
 )
     parser.add_argument(
-        '-y', 
-        '--sessions', 
+        '-y',
+        '--sessions',
         dest='year_list',
         default=YEARS,
         help='List the years that images should be downloaded from'
 )
     parser.add_argument(
-        '-m', 
+        '-m',
         '--modalities',
 #        choices=MODALITIES,
 #        nargs='+',
@@ -99,7 +99,7 @@ def main(argv=sys.argv):
         modalities = modalities.split(',')
     download_dir = args.download_dir
 
-    print("aws_downloader.py command line arguments:")    
+    print("aws_downloader.py command line arguments:")
     print("     QC spreadsheet      : {}".format(series_csv))
     print("     Number of Subjects  : {}".format(len(subject_list)))
     print("     Year                : {}".format(year_list))
@@ -144,20 +144,22 @@ def main(argv=sys.argv):
                 tgz_dir = os.path.join(download_dir, bids_id, year)
                 print("Checking QC data for valid images for {} {}.".format(bids_id, year))
                 os.makedirs(tgz_dir, exist_ok=True)
-                                
+
                 if 'anat' in modalities:
                     (file_paths, has_t1, has_t2) = add_anat_paths(sub_pass_QC_df, file_paths)
                 if 'func' in modalities:
                     (file_paths, has_sefm, has_rsfmri, has_mid, has_sst, has_nback) = add_func_paths(sub_pass_QC_df, file_paths)
                 if 'dwi' in modalities:
                     (file_paths, has_dti) = add_dwi_paths(sub_pass_QC_df, file_paths)
-                    
-            
-        
+                if ('sst' in modalities) or ('mid' in modalities) or ('nback' in modalities) or ('rsfmri' in modalities):
+                    (file_paths, has_sefm, has_rsfmri, has_mid, has_sst, has_nback) = add_task_paths(sub_pass_QC_df, file_paths, modalities)
+
+
+
                 # TODO: log subject level information
                 print(' t1=%s, t2=%s, sefm=%s, rsfmri=%s, mid=%s, sst=%s, nback=%s, has_dti=%s' % (has_t1, has_t2, has_sefm, has_rsfmri, has_mid, has_sst, has_nback, has_dti))
                 writer.writerow([bids_id, year, has_t1, has_t2, has_sefm, has_rsfmri, has_mid, has_sst, has_nback, has_dti])
-                
+
                 if has_t1 != 0:
                     num_t1 += 1
                 if has_t2 != 0:
@@ -280,6 +282,77 @@ def add_func_paths(passed_QC_group, file_paths):
         for file_path in nBack_df['image_file']:
             file_paths += [file_path]
         has_nback = nBack_df.shape[0]
+
+    return (file_paths, has_sefm, has_rsfmri, has_mid, has_sst, has_nback)
+
+
+def add_task_paths(passed_QC_group, file_paths, modalities):
+    ## Pair SEFMs and only download if both pass QC
+    #   Check first if just the FM exists
+    FM_df = passed_QC_group[passed_QC_group['image_description'] == 'ABCD-fMRI-FM']
+    if FM_df.empty:
+        FM_AP_df = passed_QC_group[passed_QC_group['image_description'] == 'ABCD-fMRI-FM-AP']
+        FM_PA_df = passed_QC_group[passed_QC_group['image_description'] == 'ABCD-fMRI-FM-PA']
+        if FM_AP_df.shape[0] != FM_PA_df.shape[0] or FM_AP_df.empty:
+            has_sefm = 0 # No SEFMs. Invalid subject
+        else:
+            for i in range(0, FM_AP_df.shape[0]):
+                if FM_AP_df.iloc[i]['QC'] == 1.0 and FM_PA_df.iloc[i]['QC'] == 1.0:
+                    FM_df = FM_df.append(FM_AP_df.iloc[i])
+                    FM_df = FM_df.append(FM_PA_df.iloc[i])
+    if FM_df.empty:
+        has_sefm = 0 # No SEFMs. Invalid subject
+    else:
+        for file_path in FM_df['image_file']:
+            file_paths += [file_path]
+        has_sefm = FM_df.shape[0]
+
+
+    ## List all rsfMRI scans that pass QC
+    if 'rsfmri' in modalities:
+        RS_df = passed_QC_group.loc[passed_QC_group['image_description'] == 'ABCD-rsfMRI']
+        if RS_df.empty:
+            has_rsfmri = 0
+        else:
+            for file_path in RS_df['image_file']:
+                file_paths += [file_path]
+            has_rsfmri = RS_df.shape[0]
+    else:
+        has_rsfmri = 0
+
+    ## List only download task iff their is a pair of scans for the task that passed QC
+    if 'mid' in modalities:
+        MID_df = passed_QC_group.loc[passed_QC_group['image_description'] == 'ABCD-MID-fMRI']
+        if MID_df.shape[0] != 2:
+            has_mid = MID_df.shape[0]
+        else:
+            for file_path in MID_df['image_file']:
+                file_paths += [file_path]
+            has_mid = MID_df.shape[0]
+    else:
+        has_mid = 0
+
+    if 'sst' in modalities:
+        SST_df = passed_QC_group.loc[passed_QC_group['image_description'] == 'ABCD-SST-fMRI']
+        if SST_df.shape[0] != 2:
+            has_sst = SST_df.shape[0]
+        else:
+            for file_path in SST_df['image_file']:
+                file_paths += [file_path]
+            has_sst = SST_df.shape[0]
+    else:
+        has_sst = 0
+
+    if 'nback' in modalities:
+        nBack_df = passed_QC_group.loc[passed_QC_group['image_description'] == 'ABCD-nBack-fMRI']
+        if nBack_df.shape[0] != 2:
+            has_nback = nBack_df.shape[0]
+        else:
+            for file_path in nBack_df['image_file']:
+                file_paths += [file_path]
+            has_nback = nBack_df.shape[0]
+    else:
+        has_nback = 0
 
     return (file_paths, has_sefm, has_rsfmri, has_mid, has_sst, has_nback)
 

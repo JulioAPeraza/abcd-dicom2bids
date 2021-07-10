@@ -55,7 +55,7 @@ SPREADSHEET_QC = os.path.join(PWD, "spreadsheets", "abcd_fastqc01.txt")
 TEMP_FILES_DIR = os.path.join(PWD, "temp")
 UNPACK_AND_SETUP = os.path.join(PWD, "src", "unpack_and_setup.sh")
 UNPACKED_FOLDER = os.path.join(PWD, "data")
-MODALITIES = ['anat', 'func', 'dwi']
+MODALITIES = ['anat', 'func', 'dwi', 'rsfmri', 'nback', 'sst', 'mid']
 SESSIONS = ['baseline_year_1_arm_1', '2_year_follow_up_y_arm_1']
 
 
