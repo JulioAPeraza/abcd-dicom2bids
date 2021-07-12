@@ -176,36 +176,44 @@ rm ${TempSubjectDir}/BIDS_unprocessed/${SUB}/${VISIT}/fmap/*dir-both* 2> /dev/nu
 
 # rename EventRelatedInformation
 srcdata_dir=${TempSubjectDir}/BIDS_unprocessed/sourcedata/${SUB}/${VISIT}/func
+copy_source=0
 if ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*EventRelatedInformation.csv > /dev/null 2>&1; then
-    echo `date`" :COPY AND RENAME SOURCE DATA"
-    mkdir -p ${srcdata_dir}
-    MID_evs=`ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*MID*EventRelatedInformation.csv 2>/dev/null`
-    SST_evs=`ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*SST*EventRelatedInformation.csv 2>/dev/null`
-    nBack_evs=`ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*nBack*EventRelatedInformation.csv 2>/dev/null`
-    echo ${MID_evs}
-    echo ${SST_evs}
-    echo ${nBack_evs}
-    if [ `echo ${MID_evs} | wc -w` -eq 2 ]; then
-        i=1
-        for ev in ${MID_evs}; do
-            cp ${ev} ${srcdata_dir}/${SUB}_${VISIT}_task-MID_run-0${i}_bold_EventRelatedInformation.csv
-            ((i++))
-        done
-    fi
-    if [ `echo ${SST_evs} | wc -w` -eq 2 ]; then
-        i=1
-        for ev in ${SST_evs}; do
-            cp ${ev} ${srcdata_dir}/${SUB}_${VISIT}_task-SST_run-0${i}_bold_EventRelatedInformation.csv
-            ((i++))
-        done
-    fi
-    if [ `echo ${nBack_evs} | wc -w` -eq 2 ]; then
-        i=1
-        for ev in ${nBack_evs}; do
-            cp ${ev} ${srcdata_dir}/${SUB}_${VISIT}_task-nback_run-0${i}_bold_EventRelatedInformation.csv
-            ((i++))
-        done
-    fi
+    suffix='csv'
+    copy_source=1
+elif ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*EventRelatedInformation.txt > /dev/null 2>&1; then
+    suffix='txt'
+    copy_source=1
+fi
+if [ $copy_source -eq 1 ]; then
+  echo `date`" :COPY AND RENAME SOURCE DATA"
+  mkdir -p ${srcdata_dir}
+  MID_evs=`ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*MID*EventRelatedInformation.$suffix 2>/dev/null`
+  SST_evs=`ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*SST*EventRelatedInformation.$suffix 2>/dev/null`
+  nBack_evs=`ls ${TempSubjectDir}/DCMs/${SUB}/${VISIT}/func/*nBack*EventRelatedInformation.$suffix 2>/dev/null`
+  echo ${MID_evs}
+  echo ${SST_evs}
+  echo ${nBack_evs}
+  if [ `echo ${MID_evs} | wc -w` -eq 2 ]; then
+      i=1
+      for ev in ${MID_evs}; do
+          cp ${ev} ${srcdata_dir}/${SUB}_${VISIT}_task-MID_run-0${i}_bold_EventRelatedInformation.$suffix
+          ((i++))
+      done
+  fi
+  if [ `echo ${SST_evs} | wc -w` -eq 2 ]; then
+      i=1
+      for ev in ${SST_evs}; do
+          cp ${ev} ${srcdata_dir}/${SUB}_${VISIT}_task-SST_run-0${i}_bold_EventRelatedInformation.$suffix
+          ((i++))
+      done
+  fi
+  if [ `echo ${nBack_evs} | wc -w` -eq 2 ]; then
+      i=1
+      for ev in ${nBack_evs}; do
+          cp ${ev} ${srcdata_dir}/${SUB}_${VISIT}_task-nback_run-0${i}_bold_EventRelatedInformation.$suffix
+          ((i++))
+      done
+  fi
 fi
 
 echo `date`" :COPYING BIDS DATA BACK: ${ROOT_BIDSINPUT}"
