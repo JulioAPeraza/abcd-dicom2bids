@@ -74,11 +74,12 @@ def main():
 
     # Before running any different scripts, validate user's NDA credentials and
     # use them to make NDA token
-    make_nda_token(cli_args)
 
     # Run all steps sequentially, starting at the one specified by the user
     started = False
     for step in STEP_NAMES:
+        if step == "download_nda_data":
+            make_nda_token(cli_args)
         if step == cli_args.stop_before:
             break
         if step == cli_args.start_at:
