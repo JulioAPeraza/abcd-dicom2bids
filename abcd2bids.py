@@ -78,13 +78,13 @@ def main():
     # Run all steps sequentially, starting at the one specified by the user
     started = False
     for step in STEP_NAMES:
-        if step == "download_nda_data":
-            make_nda_token(cli_args)
         if step == cli_args.stop_before:
             break
         if step == cli_args.start_at:
             started = True
         if started:
+            if step == "download_nda_data":
+                make_nda_token(cli_args)
             get_and_print_timestamp_when("The {} step".format(step),
                                          "started")
             globals()[step](cli_args)
